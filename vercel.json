@@ -1,0 +1,16 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/generate-instances",
+      "schedule": "5 0 * * *"
+    },
+    {
+      "path": "/api/cron/notify-overdue",
+      "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/cron/daily-digest",
+      "schedule": "0 8 * * *"
+    }
+  ]
+}

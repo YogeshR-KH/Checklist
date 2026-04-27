@@ -1,0 +1,144 @@
+// CheckFlow — Prisma schema
+// Cloud-portable: targets PostgreSQL, works against Supabase or any Postgres host.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum UserRole {
+  super_admin
+  admin
+  pc
+  doer
+}
+
+enum TaskFrequency {
+  daily
+  weekly
+  fortnightly
+  monthly
+  first_sunday
+  second_sunday
+  half_yearly
+  yearly
+  custom
+}
+
+enum InstanceStatus {
+  pending
+  done
+  overdue
+}
+
+model Company {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  profiles      Profile[]
+  tasks         Task[]
+  taskInstances TaskInstance[]
+  absentLogs    AbsentLog[]
+
+  @@map("companies")
+}
+
+model Profile {
+  id        String   @id @db.Uuid
+  fullName  String   @map("full_name")
+  email     String?  @unique
+  role      UserRole
+  companyId String?  @map("company_id") @db.Uuid
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  company Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  tasksAsDoer       Task[]         @relation("TaskDoer")
+  tasksAsBackup     Task[]         @relation("TaskBackupDoer")
+  tasksAsPC         Task[]         @relation("TaskPC")
+  instancesAsDoer   TaskInstance[] @relation("InstanceDoer")
+  instancesAsPC     TaskInstance[] @relation("InstancePC")
+  absences          AbsentLog[]    @relation("AbsentDoer")
+  absencesMarked    AbsentLog[]    @relation("AbsentMarkedBy")
+
+  @@index([companyId])
+  @@map("profiles")
+}
+
+model Task {
+  id              String        @id @default(uuid()) @db.Uuid
+  companyId       String        @map("company_id") @db.Uuid
+  title           String
+  doerId          String        @map("doer_id") @db.Uuid
+  backupDoerId    String?       @map("backup_doer_id") @db.Uuid
+  pcId            String        @map("pc_id") @db.Uuid
+  deadlineTime    String        @map("deadline_time") // HH:MM:SS, stored as time
+  frequency       TaskFrequency
+  frequencyConfig Json          @default("{}") @map("frequency_config")
+  remarksRequired Boolean       @default(false) @map("remarks_required")
+  isCritical      Boolean       @default(false) @map("is_critical")
+  isActive        Boolean       @default(true) @map("is_active")
+  createdAt       DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  company    Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  doer       Profile        @relation("TaskDoer", fields: [doerId], references: [id])
+  backupDoer Profile?       @relation("TaskBackupDoer", fields: [backupDoerId], references: [id])
+  pc         Profile        @relation("TaskPC", fields: [pcId], references: [id])
+  instances  TaskInstance[]
+
+  @@index([companyId, isActive])
+  @@map("tasks")
+}
+
+model TaskInstance {
+  id            String         @id @default(uuid()) @db.Uuid
+  taskId        String         @map("task_id") @db.Uuid
+  companyId     String         @map("company_id") @db.Uuid
+  doerId        String         @map("doer_id") @db.Uuid
+  pcId          String         @map("pc_id") @db.Uuid
+  dueDate       DateTime       @map("due_date") @db.Date
+  dueDatetime   DateTime       @map("due_datetime") @db.Timestamptz(6)
+  status        InstanceStatus @default(pending)
+  completedAt   DateTime?      @map("completed_at") @db.Timestamptz(6)
+  remarks       String?
+  followUpNotes Json           @default("[]") @map("follow_up_notes")
+  isAbsentSwap  Boolean        @default(false) @map("is_absent_swap")
+  createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  task    Task    @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  doer    Profile @relation("InstanceDoer", fields: [doerId], references: [id])
+  pc      Profile @relation("InstancePC", fields: [pcId], references: [id])
+
+  @@unique([taskId, dueDate])
+  @@index([companyId, dueDate])
+  @@index([doerId, dueDate])
+  @@index([pcId, dueDate])
+  @@index([status, dueDatetime])
+  @@map("task_instances")
+}
+
+model AbsentLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  companyId  String   @map("company_id") @db.Uuid
+  doerId     String   @map("doer_id") @db.Uuid
+  absentDate DateTime @map("absent_date") @db.Date
+  markedBy   String   @map("marked_by") @db.Uuid
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  company  Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  doer     Profile @relation("AbsentDoer", fields: [doerId], references: [id])
+  marker   Profile @relation("AbsentMarkedBy", fields: [markedBy], references: [id])
+
+  @@unique([doerId, absentDate])
+  @@index([companyId, absentDate])
+  @@map("absent_log")
+}

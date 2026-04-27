@@ -1,0 +1,48 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-primary: #172B63;
+  --color-accent: #D6A969;
+}
+
+html, body { height: 100%; }
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: #FFFFFF;
+  color: #111827;
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center justify-center px-4 py-2 rounded-md bg-primary text-white font-medium hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition;
+  }
+  .btn-accent {
+    @apply inline-flex items-center justify-center px-4 py-2 rounded-md bg-accent text-primary font-semibold hover:opacity-90 disabled:opacity-50 transition;
+  }
+  .btn-outline {
+    @apply inline-flex items-center justify-center px-4 py-2 rounded-md border border-primary text-primary font-medium hover:bg-primary hover:text-white transition;
+  }
+  .btn-danger {
+    @apply inline-flex items-center justify-center px-4 py-2 rounded-md bg-danger text-white font-medium hover:opacity-90 transition;
+  }
+  .input {
+    @apply block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary;
+  }
+  .label {
+    @apply block text-sm font-medium text-gray-700 mb-1;
+  }
+  .card {
+    @apply bg-white rounded-lg shadow-sm border border-gray-200 p-4;
+  }
+  .card-pending {
+    @apply bg-white rounded-lg shadow-sm border border-gray-200 border-l-4 border-l-accent p-4;
+  }
+  .card-overdue {
+    @apply bg-red-50 rounded-lg shadow-sm border border-red-200 border-l-4 border-l-danger p-4;
+  }
+  .card-done {
+    @apply bg-green-50 rounded-lg shadow-sm border border-green-200 p-4;
+  }
+}
