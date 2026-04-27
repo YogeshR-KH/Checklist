@@ -89,7 +89,8 @@ create table if not exists absent_log (
 create index if not exists absent_company_date_idx on absent_log(company_id, absent_date);
 
 -- Helper functions for RLS — security definer to bypass recursion on profiles.
-create or replace function public.current_role()
+-- Named app_current_* to avoid clashing with the built-in current_role/current_user keywords.
+create or replace function public.app_current_role()
 returns user_role
 language sql stable security definer
 set search_path = public
@@ -97,7 +98,7 @@ as $$
   select role from profiles where id = auth.uid();
 $$;
 
-create or replace function public.current_company()
+create or replace function public.app_current_company()
 returns uuid
 language sql stable security definer
 set search_path = public
@@ -124,13 +125,13 @@ alter table absent_log     enable row level security;
 drop policy if exists companies_super on companies;
 create policy companies_super on companies
   for all to authenticated
-  using (current_role() = 'super_admin')
-  with check (current_role() = 'super_admin');
+  using (app_current_role() = 'super_admin')
+  with check (app_current_role() = 'super_admin');
 
 drop policy if exists companies_admin_read on companies;
 create policy companies_admin_read on companies
   for select to authenticated
-  using (id = current_company());
+  using (id = app_current_company());
 
 -- PROFILES
 drop policy if exists profiles_self_read on profiles;
@@ -141,92 +142,92 @@ create policy profiles_self_read on profiles
 drop policy if exists profiles_super on profiles;
 create policy profiles_super on profiles
   for all to authenticated
-  using (current_role() = 'super_admin')
-  with check (current_role() = 'super_admin');
+  using (app_current_role() = 'super_admin')
+  with check (app_current_role() = 'super_admin');
 
 drop policy if exists profiles_admin on profiles;
 create policy profiles_admin on profiles
   for all to authenticated
-  using (current_role() = 'admin' and company_id = current_company())
-  with check (current_role() = 'admin' and company_id = current_company());
+  using (app_current_role() = 'admin' and company_id = app_current_company())
+  with check (app_current_role() = 'admin' and company_id = app_current_company());
 
 drop policy if exists profiles_company_read on profiles;
 create policy profiles_company_read on profiles
   for select to authenticated
-  using (company_id = current_company());
+  using (company_id = app_current_company());
 
 -- TASKS
 drop policy if exists tasks_super on tasks;
 create policy tasks_super on tasks
   for all to authenticated
-  using (current_role() = 'super_admin')
-  with check (current_role() = 'super_admin');
+  using (app_current_role() = 'super_admin')
+  with check (app_current_role() = 'super_admin');
 
 drop policy if exists tasks_admin on tasks;
 create policy tasks_admin on tasks
   for all to authenticated
-  using (current_role() = 'admin' and company_id = current_company())
-  with check (current_role() = 'admin' and company_id = current_company());
+  using (app_current_role() = 'admin' and company_id = app_current_company())
+  with check (app_current_role() = 'admin' and company_id = app_current_company());
 
 drop policy if exists tasks_company_read on tasks;
 create policy tasks_company_read on tasks
   for select to authenticated
-  using (company_id = current_company());
+  using (company_id = app_current_company());
 
 -- TASK INSTANCES
 drop policy if exists ti_super on task_instances;
 create policy ti_super on task_instances
   for all to authenticated
-  using (current_role() = 'super_admin')
-  with check (current_role() = 'super_admin');
+  using (app_current_role() = 'super_admin')
+  with check (app_current_role() = 'super_admin');
 
 drop policy if exists ti_admin on task_instances;
 create policy ti_admin on task_instances
   for all to authenticated
-  using (current_role() = 'admin' and company_id = current_company())
-  with check (current_role() = 'admin' and company_id = current_company());
+  using (app_current_role() = 'admin' and company_id = app_current_company())
+  with check (app_current_role() = 'admin' and company_id = app_current_company());
 
 drop policy if exists ti_pc_read on task_instances;
 create policy ti_pc_read on task_instances
   for select to authenticated
-  using (current_role() = 'pc' and pc_id = auth.uid());
+  using (app_current_role() = 'pc' and pc_id = auth.uid());
 
 drop policy if exists ti_pc_update on task_instances;
 create policy ti_pc_update on task_instances
   for update to authenticated
-  using (current_role() = 'pc' and pc_id = auth.uid())
-  with check (current_role() = 'pc' and pc_id = auth.uid());
+  using (app_current_role() = 'pc' and pc_id = auth.uid())
+  with check (app_current_role() = 'pc' and pc_id = auth.uid());
 
 drop policy if exists ti_doer_read on task_instances;
 create policy ti_doer_read on task_instances
   for select to authenticated
-  using (current_role() = 'doer' and doer_id = auth.uid());
+  using (app_current_role() = 'doer' and doer_id = auth.uid());
 
 drop policy if exists ti_doer_update on task_instances;
 create policy ti_doer_update on task_instances
   for update to authenticated
-  using (current_role() = 'doer' and doer_id = auth.uid())
-  with check (current_role() = 'doer' and doer_id = auth.uid());
+  using (app_current_role() = 'doer' and doer_id = auth.uid())
+  with check (app_current_role() = 'doer' and doer_id = auth.uid());
 
 -- ABSENT LOG
 drop policy if exists absent_super on absent_log;
 create policy absent_super on absent_log
   for all to authenticated
-  using (current_role() = 'super_admin')
-  with check (current_role() = 'super_admin');
+  using (app_current_role() = 'super_admin')
+  with check (app_current_role() = 'super_admin');
 
 drop policy if exists absent_admin on absent_log;
 create policy absent_admin on absent_log
   for all to authenticated
-  using (current_role() = 'admin' and company_id = current_company())
-  with check (current_role() = 'admin' and company_id = current_company());
+  using (app_current_role() = 'admin' and company_id = app_current_company())
+  with check (app_current_role() = 'admin' and company_id = app_current_company());
 
 drop policy if exists absent_pc_insert on absent_log;
 create policy absent_pc_insert on absent_log
   for insert to authenticated
-  with check (current_role() = 'pc' and company_id = current_company());
+  with check (app_current_role() = 'pc' and company_id = app_current_company());
 
 drop policy if exists absent_company_read on absent_log;
 create policy absent_company_read on absent_log
   for select to authenticated
-  using (company_id = current_company());
+  using (company_id = app_current_company());
