@@ -27,8 +27,12 @@ export async function POST(req: NextRequest) {
 
   const admin = createSupabaseAdminClient();
   // Invite user — Supabase emails them a sign-up link.
+  // redirectTo points back to our callback so the PKCE code is exchanged for a
+  // session and the new user is sent to set their password.
+  const origin = req.nextUrl.origin;
   const { data, error } = await admin.auth.admin.inviteUserByEmail(email, {
-    data: { full_name: fullName }
+    data: { full_name: fullName },
+    redirectTo: `${origin}/auth/callback?next=/auth/setup-password`
   });
   if (error || !data.user) {
     return NextResponse.json({ error: error?.message ?? 'invite failed' }, { status: 400 });

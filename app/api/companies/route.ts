@@ -24,8 +24,10 @@ export async function POST(req: NextRequest) {
   const company = await prisma.company.create({ data: { name } });
 
   const admin = createSupabaseAdminClient();
+  const origin = req.nextUrl.origin;
   const { data, error } = await admin.auth.admin.inviteUserByEmail(adminEmail, {
-    data: { full_name: adminName }
+    data: { full_name: adminName },
+    redirectTo: `${origin}/auth/callback?next=/auth/setup-password`
   });
   if (error || !data.user) {
     // roll back
