@@ -10,7 +10,8 @@
     "postinstall": "prisma generate",
     "prisma:generate": "prisma generate",
     "prisma:push": "prisma db push",
-    "seed": "tsx scripts/seed.ts"
+    "seed": "tsx scripts/seed.ts",
+    "seed:rest": "tsx scripts/seed-supabase.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",

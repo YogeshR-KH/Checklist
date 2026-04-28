@@ -104,7 +104,7 @@ Vercel sends `Authorization: Bearer ${CRON_SECRET}` automatically — set `CRON_
 
 - **Prisma** is the only client used for DB queries — keeps the app cloud-portable. Supabase JS is used only for auth and admin tasks (creating users).
 - **Row-Level Security** is enforced in Postgres; the app server still respects role-based authorization, but RLS is the last line of defense for any direct-DB clients.
-- Two helper SQL functions, `current_role()` and `current_company()`, are `security definer` to avoid recursion in policies on the `profiles` table.
+- Two helper SQL functions, `app_current_role()` and `app_current_company()`, are `security definer` to avoid recursion in policies on the `profiles` table. (Named with the `app_` prefix to avoid clashing with the built-in `current_role` Postgres keyword.)
 - Task instances are uniquely keyed on `(task_id, due_date)`, so the daily generator is idempotent — running it twice produces zero duplicates.
 
 ---
