@@ -4,20 +4,21 @@
 
 create extension if not exists "uuid-ossp";
 
--- Enums
+-- Enums — type names match Prisma's PascalCase enum names so generated SQL
+-- can cast values without an @@map (which Prisma 5.x doesn't honor at runtime).
 do $$ begin
-  create type user_role as enum ('super_admin','admin','pc','doer');
+  create type "UserRole" as enum ('super_admin','admin','pc','doer');
 exception when duplicate_object then null; end $$;
 
 do $$ begin
-  create type task_frequency as enum (
+  create type "TaskFrequency" as enum (
     'daily','weekly','fortnightly','monthly',
     'first_sunday','second_sunday','half_yearly','yearly','custom'
   );
 exception when duplicate_object then null; end $$;
 
 do $$ begin
-  create type instance_status as enum ('pending','done','overdue');
+  create type "InstanceStatus" as enum ('pending','done','overdue');
 exception when duplicate_object then null; end $$;
 
 -- Tables
@@ -32,7 +33,7 @@ create table if not exists profiles (
   id          uuid primary key references auth.users(id) on delete cascade,
   full_name   text not null,
   email       text unique,
-  role        user_role not null,
+  role        "UserRole" not null,
   company_id  uuid references companies(id) on delete cascade,
   is_active   boolean not null default true,
   created_at  timestamptz not null default now()
@@ -47,7 +48,7 @@ create table if not exists tasks (
   backup_doer_id    uuid references profiles(id),
   pc_id             uuid not null references profiles(id),
   deadline_time     text not null,
-  frequency         task_frequency not null,
+  frequency         "TaskFrequency" not null,
   frequency_config  jsonb not null default '{}'::jsonb,
   remarks_required  boolean not null default false,
   is_critical       boolean not null default false,
@@ -64,7 +65,7 @@ create table if not exists task_instances (
   pc_id           uuid not null references profiles(id),
   due_date        date not null,
   due_datetime    timestamptz not null,
-  status          instance_status not null default 'pending',
+  status          "InstanceStatus" not null default 'pending',
   completed_at    timestamptz,
   remarks         text,
   follow_up_notes jsonb not null default '[]'::jsonb,
@@ -91,7 +92,7 @@ create index if not exists absent_company_date_idx on absent_log(company_id, abs
 -- Helper functions for RLS — security definer to bypass recursion on profiles.
 -- Named app_current_* to avoid clashing with the built-in current_role/current_user keywords.
 create or replace function public.app_current_role()
-returns user_role
+returns "UserRole"
 language sql stable security definer
 set search_path = public
 as $$
