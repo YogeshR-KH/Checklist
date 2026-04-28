@@ -26,16 +26,19 @@ export async function POST(req: NextRequest) {
   const { fullName, email, role } = parsed.data;
 
   const admin = createSupabaseAdminClient();
-  // Invite user — Supabase emails them a sign-up link.
-  // redirectTo points back to our callback so the PKCE code is exchanged for a
-  // session and the new user is sent to set their password.
-  const origin = req.nextUrl.origin;
-  const { data, error } = await admin.auth.admin.inviteUserByEmail(email, {
-    data: { full_name: fullName },
-    redirectTo: `${origin}/auth/callback?next=/auth/setup-password`
+  // Provision the user with a generated temp password — admin shares it with
+  // the user out-of-band. Avoids the invite-email round-trip, which is fragile
+  // across the Supabase /verify redirect (implicit hash-params don't survive
+  // an SSR cookie session). User can change password later via account UI.
+  const tempPassword = generateTempPassword();
+  const { data, error } = await admin.auth.admin.createUser({
+    email,
+    password: tempPassword,
+    email_confirm: true,
+    user_metadata: { full_name: fullName }
   });
   if (error || !data.user) {
-    return NextResponse.json({ error: error?.message ?? 'invite failed' }, { status: 400 });
+    return NextResponse.json({ error: error?.message ?? 'create failed' }, { status: 400 });
   }
 
   await prisma.profile.create({
@@ -48,5 +51,17 @@ export async function POST(req: NextRequest) {
     }
   });
 
-  return NextResponse.json({ ok: true, userId: data.user.id });
+  return NextResponse.json({
+    ok: true,
+    userId: data.user.id,
+    email,
+    tempPassword
+  });
+}
+
+function generateTempPassword(): string {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+  let pw = '';
+  for (let i = 0; i < 12; i++) pw += chars[Math.floor(Math.random() * chars.length)];
+  return pw + '!1';
 }

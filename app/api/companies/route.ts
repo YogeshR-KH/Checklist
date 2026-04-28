@@ -24,15 +24,16 @@ export async function POST(req: NextRequest) {
   const company = await prisma.company.create({ data: { name } });
 
   const admin = createSupabaseAdminClient();
-  const origin = req.nextUrl.origin;
-  const { data, error } = await admin.auth.admin.inviteUserByEmail(adminEmail, {
-    data: { full_name: adminName },
-    redirectTo: `${origin}/auth/callback?next=/auth/setup-password`
+  const tempPassword = generateTempPassword();
+  const { data, error } = await admin.auth.admin.createUser({
+    email: adminEmail,
+    password: tempPassword,
+    email_confirm: true,
+    user_metadata: { full_name: adminName }
   });
   if (error || !data.user) {
-    // roll back
     await prisma.company.delete({ where: { id: company.id } });
-    return NextResponse.json({ error: error?.message ?? 'invite failed' }, { status: 400 });
+    return NextResponse.json({ error: error?.message ?? 'create failed' }, { status: 400 });
   }
 
   await prisma.profile.create({
@@ -45,5 +46,16 @@ export async function POST(req: NextRequest) {
     }
   });
 
-  return NextResponse.json({ company });
+  return NextResponse.json({
+    company,
+    adminEmail,
+    tempPassword
+  });
+}
+
+function generateTempPassword(): string {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+  let pw = '';
+  for (let i = 0; i < 12; i++) pw += chars[Math.floor(Math.random() * chars.length)];
+  return pw + '!1';
 }

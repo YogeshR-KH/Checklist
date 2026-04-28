@@ -103,6 +103,7 @@ function AddUserForm({ onDone }: { onDone: () => void }) {
   const [role, setRole] = useState<'admin' | 'pc' | 'doer'>('doer');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [created, setCreated] = useState<{ email: string; tempPassword: string } | null>(null);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -114,12 +115,37 @@ function AddUserForm({ onDone }: { onDone: () => void }) {
       body: JSON.stringify({ fullName: name, email, role })
     });
     setBusy(false);
+    const j = await res.json().catch(() => ({}));
     if (!res.ok) {
-      const j = await res.json().catch(() => ({}));
       setErr(j.error ?? 'Failed');
       return;
     }
-    onDone();
+    setCreated({ email: j.email, tempPassword: j.tempPassword });
+  }
+
+  if (created) {
+    return (
+      <div className="card space-y-3">
+        <div>
+          <h3 className="font-semibold text-success">User created</h3>
+          <p className="text-xs text-gray-600">Share these credentials with the new user. They can change the password after first sign-in.</p>
+        </div>
+        <div className="bg-neutral rounded-md p-3 font-mono text-sm space-y-1">
+          <div><span className="text-gray-500">Email:</span> {created.email}</div>
+          <div><span className="text-gray-500">Password:</span> <span className="font-bold">{created.tempPassword}</span></div>
+        </div>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            className="btn-outline text-sm"
+            onClick={() => navigator.clipboard.writeText(`Email: ${created.email}\nPassword: ${created.tempPassword}\nLogin: ${window.location.origin}/login`)}
+          >
+            Copy credentials
+          </button>
+          <button type="button" className="btn-primary text-sm" onClick={onDone}>Done</button>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -147,7 +173,7 @@ function AddUserForm({ onDone }: { onDone: () => void }) {
       </div>
       {err && <p className="text-sm text-danger md:col-span-4">{err}</p>}
       <p className="text-xs text-gray-500 md:col-span-4">
-        New user receives an invite email; they set their password from the link.
+        A temporary password will be generated. Share it with the new user — they can change it after sign-in.
       </p>
     </form>
   );
