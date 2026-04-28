@@ -16,6 +16,8 @@ enum UserRole {
   admin
   pc
   doer
+
+  @@map("user_role")
 }
 
 enum TaskFrequency {
@@ -28,12 +30,16 @@ enum TaskFrequency {
   half_yearly
   yearly
   custom
+
+  @@map("task_frequency")
 }
 
 enum InstanceStatus {
   pending
   done
   overdue
+
+  @@map("instance_status")
 }
 
 model Company {

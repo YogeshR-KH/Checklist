@@ -46,7 +46,7 @@ create table if not exists tasks (
   doer_id           uuid not null references profiles(id),
   backup_doer_id    uuid references profiles(id),
   pc_id             uuid not null references profiles(id),
-  deadline_time     time not null,
+  deadline_time     text not null,
   frequency         task_frequency not null,
   frequency_config  jsonb not null default '{}'::jsonb,
   remarks_required  boolean not null default false,
