@@ -6,7 +6,7 @@
     },
     {
       "path": "/api/cron/notify-overdue",
-      "schedule": "*/15 * * * *"
+      "schedule": "0 9 * * *"
     },
     {
       "path": "/api/cron/daily-digest",
